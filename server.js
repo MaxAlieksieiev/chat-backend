@@ -2,7 +2,8 @@ const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const cors = require('cors')
-const authRoutes = require('./src/routes/auth.routes.js');
+const authRoutes = require('./app/routes/auth.routes.js');
+const db = require("./app/models");
 
 const port = 3000;
 const corsOptions = {
@@ -12,6 +13,14 @@ const corsOptions = {
 app.use(cors(corsOptions))
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+db.sequelize.sync()
+.then(() => {
+	console.log("Synced db.");
+})
+.catch((err) => {
+	console.log("Failed to sync db: " + err.message);
+});
 
 app.use('/api/v1/auth', authRoutes);
 
