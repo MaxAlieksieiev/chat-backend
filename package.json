@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "run": "nodemon --watch ./app server.js",
-    "db:migration:create": "npx sequelize-cli migration:create --name ",
+    "db:migration:create": "npx sequelize-cli migration:create --name",
+    "db:migration:run": "npx sequelize-cli db:migrate",
+    "db:migration:undo": "npx sequelize-cli db:migrate:undo --name",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "MaxAlieksieiev",
