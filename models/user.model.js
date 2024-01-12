@@ -1,3 +1,5 @@
+const bcrypt = require('bcrypt');
+
 module.exports = (sequelize, Sequelize) => {
   const user = sequelize.define('user', {
     firstName: {
@@ -28,6 +30,20 @@ module.exports = (sequelize, Sequelize) => {
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE',
     });
+  };
+
+  user.beforeCreate(async (user) => {
+    try {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(user.password, salt);
+      user.password = hashedPassword;
+    } catch (error) {
+      console.error(error);
+    }
+  });
+
+  user.prototype.validPassword = async function (password) {
+    return await bcrypt.compare(password, this.password);
   };
 
   return user;
