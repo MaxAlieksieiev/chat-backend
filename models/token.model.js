@@ -1,14 +1,20 @@
 module.exports = (sequelize, Sequelize) => {
-  const token = sequelize.define('token', {
-    userId: {
-      type: Sequelize.NUMBER,
-      allowNull: false,
+  const token = sequelize.define(
+    'token',
+    {
+      userId: {
+        type: Sequelize.NUMBER,
+        allowNull: false,
+      },
+      refreshToken: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
     },
-    refreshToken: {
-      type: Sequelize.STRING,
-      allowNull: false,
-    },
-  });
+    {
+      timestamps: false,
+    }
+  );
 
   token.associate = function (models) {
     models.token.belongsTo(models.user, {
