@@ -11,4 +11,8 @@ router.post('/registration', async (req, res) =>
   authController.register(req, res)
 );
 
+router.get('/refresh-token', async (req, res) => {
+  authController.refreshToken(req, res);
+});
+
 module.exports = router;

@@ -90,16 +90,23 @@ async function login(req, res) {
       {
         id: userFromDb.id,
         email: userFromDb.email,
+        nickName: userFromDb.nickName,
       },
       process.env.TOKEN_SECRET,
       {
-        expiresIn: '10m',
+        expiresIn: process.env.ACCESS_TOKEN_EXPIRED,
       }
     );
 
-    const refreshToken = jwt.sign({}, process.env.TOKEN_SECRET, {
-      expiresIn: '1d',
-    });
+    const refreshToken = jwt.sign(
+      {
+        id: userFromDb.id,
+      },
+      process.env.TOKEN_SECRET,
+      {
+        expiresIn: process.env.REFRESH_TOKEN_EXPIRED,
+      }
+    );
     const payloadForCreateToken = { refreshToken, userId: userFromDb.id };
 
     const newToken = await token.findOne({ where: { userId: userFromDb.id } });
@@ -111,11 +118,10 @@ async function login(req, res) {
     }
 
     const { password, ...userInfo } = userFromDb;
+    res.cookie('accessToken', accessToken, { httpOnly: true, secure: true });
+    res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true });
     return res.status(200).send({
-      data: {
-        accessToken,
-        ...userInfo,
-      },
+      data: { ...userInfo },
     });
   } catch (error) {
     return res.status(400).send({
@@ -124,7 +130,58 @@ async function login(req, res) {
   }
 }
 
+async function refreshToken(req, res) {
+  const { refreshToken } = req.cookies;
+  try {
+    const isValidRefreshToken = jwt.verify(
+      refreshToken,
+      process.env.TOKEN_SECRET
+    );
+    const { id } = isValidRefreshToken;
+    const currentUser = await user.findByPk(id);
+    const newAccessToken = jwt.sign(
+      {
+        id: currentUser.id,
+        email: currentUser.email,
+        nickName: currentUser.nickName,
+      },
+      process.env.TOKEN_SECRET,
+      {
+        expiresIn: process.env.ACCESS_TOKEN_EXPIRED,
+      }
+    );
+    const newRefreshToken = jwt.sign(
+      {
+        id: currentUser.id,
+      },
+      process.env.TOKEN_SECRET,
+      {
+        expiresIn: process.env.REFRESH_TOKEN_EXPIRED,
+      }
+    );
+
+    const currentToken = await token.findOne({ where: { userId: id } });
+    currentToken.refreshToken = newRefreshToken;
+    await currentToken.save();
+    res.cookie('accessToken', newAccessToken, { httpOnly: true, secure: true });
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: true,
+    });
+    return res.status(200).send({
+      message: 'Token is updated',
+    });
+  } catch (error) {
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+    return res.status(401).send({
+      message: error.message || 'Something went wrong',
+    });
+  }
+}
+
 module.exports = {
   register,
   login,
+  refreshToken,
 };
